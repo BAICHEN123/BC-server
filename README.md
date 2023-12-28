@@ -1,4 +1,7 @@
 ## 一个物联网项目的服务器端代码仓库
+
+[Thanks Chat-GPT for the translation.](./README.en.md)
+
 ### 其他端
 #### gitee
 [app](https://gitee.com/he_chen_chuan/Mytabs)  
