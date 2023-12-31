@@ -4,11 +4,11 @@
 
 ### 其他端
 #### gitee
-[app](https://gitee.com/he_chen_chuan/Mytabs)  
+[app](https://gitee.com/he_chen_chuan/BC-app)  
 [esp8266 节点](https://gitee.com/he_chen_chuan/node)  
 
 #### github
-[app](https://github.com/BAICHEN123/Mytabs)  
+[app](https://github.com/BAICHEN123/BC-app)  
 [esp8266 节点](https://github.com/BAICHEN123/node)  
 
 另外2个仓库文档没写，晚点儿放出来。
