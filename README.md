@@ -11,7 +11,6 @@
 [app](https://github.com/BAICHEN123/BC-app)  
 [esp8266 节点](https://github.com/BAICHEN123/node)  
 
-另外2个仓库文档没写，晚点儿放出来。
 ### 使用方式
 我只在我的Ubuntu 22.04.3 LTS (GNU/Linux 6.2.0-37-generic x86_64)系统验证过  
 mysql  Ver 8.0.35-0ubuntu0.22.04.1 for Linux on x86_64 ((Ubuntu))   
