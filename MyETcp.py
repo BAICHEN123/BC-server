@@ -14,13 +14,33 @@
 import socket
 import MyPrintE
 import time
-import re
+import re,sys
+import threading
 from Mymysql import Mymysql
 from MySmtp import send_email_warning
 from MySmtp import email_send_str
 
 
 dict_TCP = dict()
+
+
+"""
+数据协议类
+"""
+
+
+class TCPBytesData:
+    def __init__(self, bytes_data):
+        self.type = -1
+        self.len = 0
+        self.data = None
+        if type(bytes_data) != bytes:
+            return
+        if len(bytes_data) == 3:
+            self.type = bytes_data[0]
+            self.len = bytes_data[1:3]
+        if len(bytes_data) > 3:
+            self.data = bytes_data[3:]
 
 
 """记录一个用户某一时刻离线的所有设备"""
@@ -191,7 +211,8 @@ class MyETcp:
         else:
             assert type(dict_msg) == dict
             self.dict_msg = dict_msg
-        self.working_status = False
+        # self.threading_lock = threading.RLock() #同线程可重入锁，我应该写的没问题，就不用这个了。
+        self.threading_lock = threading.Lock()
         self.time_out = time.time()
         self.socket_node.settimeout(None)  # 设置为永不超时
         self.bytes_last_data = None
@@ -252,10 +273,33 @@ class MyETcp:
         self.socket_node.settimeout(float_time_out_s)  # 设置等待时间上限
         bytes_TCP_data = None
         try:
-            bytes_TCP_data = self.socket_node.recv(1024)  # 接收套接字
-            self.time_out = time.time()  # 更新最后一次收到数据的时间
-            if len(bytes_TCP_data) > 0 and bytes_TCP_data[0] in [9, 35]:
-                self.bytes_last_data = bytes_TCP_data
+            timestart = time.time()
+            bytes_type_len = self.socket_node.recv(3)  # 接收套接字
+            if bytes_type_len != 3:
+                MyPrintE.log_print(f"收到的长度 不足3 bytes_type_len {len(bytes_type_len)}")
+            else:
+                e_type = bytes_type_len[0]
+                len1 = int.from_bytes(bytes_type_len[1:3], "big")
+                bytes_TCP_data = self.socket_node.recv(len1)  # 接收套接字
+                if len(bytes_TCP_data) != len1:
+                    MyPrintE.log_print(
+                        f"收到的长度和指定的长度不同 len1 {len1} bytes_TCP_data {len(bytes_TCP_data)}"
+                    )
+                while len(bytes_TCP_data) != len1:
+                    bytes_TCP_data1 = self.socket_node.recv(
+                        len1 - len(bytes_TCP_data)
+                    )  # 接收套接字
+                    bytes_TCP_data = bytes_TCP_data + bytes_TCP_data1
+                if time.time() - timestart>float_time_out_s:
+                    MyPrintE.log_print(
+                        f"接受数据超时 ",{'line':sys._getframe().f_lineno, 'file': __file__,}
+                    )
+
+                assert len(bytes_TCP_data) == len1, "收到的长度和指定的长度不同"
+                self.time_out = time.time()  # 更新最后一次收到数据的时间
+                if len(bytes_TCP_data) > 0 and e_type in [9, 35]:
+                    self.bytes_last_data = bytes_TCP_data
+                bytes_TCP_data = bytes_type_len + bytes_TCP_data
         except ConnectionResetError as e:
             # 管道已经被关闭
             # MyPrintE.e_print(e,'eid='+str(self.INT_EID))
@@ -304,38 +348,26 @@ class MyETcp:
 				type()=bytes 正常数据
 	"""
 
-    def send_data_to_equipment(self, str_send_data, float_time_out_s=3.0):
+    def send_data_to_equipment_of_lock(self, str_send_data, float_time_out_s=3.0):
         if self.socket_node == None:  # 判断是否为空
-            return False
-        time_out = 0
-        while self.working_status == True:  # 等待其他线程释放此连接
-            time.sleep(0.1)
-            time_out = time_out + 0.1
-            if time_out > float_time_out_s:
-                return None
-        if self.socket_node == None:  # 判断是否为空
-            return False
-        self.working_status = True  # 声明占有此连接
+            return False 
         # 清除掉所有的旧数据
-        self.__clear_recv_cache()  # 返回值就不管了，反正后面还会进行非空判断
+        self.__clear_recv_cache_of_lock()  # 返回值就不管了，反正后面还会进行非空判断
         # 发送指令#send只是把数据复制到缓存里面去，设置时间没啥卵用
         if self.e_send(str_send_data) == False:
-            self.working_status = False  # 设置为空闲状态
             return False
         # 接收返回的数据
-        start_time = time.time()
-        float_time_out_s = float_time_out_s - time_out  # 减去获取链接阻塞用掉的时间，剩下的时间
-        tcp_date = self.__e_recv(float_time_out_s)
-        while type(tcp_date) == bytes and len(tcp_date) > 0:
-            if tcp_date[0] == 35:  # '#' 的ASCII是35
+        start_time = time.time() 
+        tcp_date = TCPBytesData(self.__e_recv(float_time_out_s))
+        while tcp_date.len > 0:
+            if tcp_date.type in [
+                35,# '#' 的ASCII是35
+                64,#'@'==64
+                76,#'L'==76
+                68,#'D'==68
+            ]:   # '\t' 的ASCII是9
                 break
-            elif tcp_date[0] == 64:  #'@'==64
-                break
-            elif tcp_date[0] == 76:  #'L'==76
-                break
-            elif tcp_date[0] == 68:  #'D'==68
-                break
-            elif tcp_date[0] == 9:  # '\t' 的ASCII是9
+            elif tcp_date.type == 9:
                 # 重新计算还可以阻塞多少S
                 float_time_out_s = float_time_out_s - (time.time() - start_time)
                 if float_time_out_s < 0:
@@ -343,22 +375,26 @@ class MyETcp:
                     tcp_date = None
                     break
                 start_time = time.time()  # 重新掐表
-                tcp_date = self.__e_recv(float_time_out_s)
+                tcp_date = TCPBytesData(self.__e_recv(float_time_out_s))
             else:
                 MyPrintE.log_print("send_data_to_equipment else 1")
                 print(tcp_date)
                 tcp_date = None
                 break
-        self.working_status = False  # 设置为空闲状态
-        return tcp_date
+        return tcp_date.data
+
+    def send_data_to_equipment(self, str_send_data, float_time_out_s=3.0):
+        with self.threading_lock:
+            obj1 = self.send_data_to_equipment_of_lock(str_send_data, float_time_out_s)
+            return obj1
 
     """清除掉tcp所有的缓存"""
 
-    def __clear_recv_cache(self):
+    def __clear_recv_cache_of_lock(self):
         if self.socket_node == None:  # 判断是否为空
             return False
         tcp_data = self.__e_recv(0)
-        while type(tcp_data) == bytes:
+        while tcp_data != None and self.socket_node == None:
             tcp_data = self.__e_recv(0)
         # 连接为空，说明链接断裂了
         return self.socket_node != None
@@ -369,14 +405,12 @@ class MyETcp:
         if self.socket_node == None:  # 判断是否为空
             return False
         # 如果当前的状态是空闲的就清除数据
-        error_i = 0  # 我下面这个循环会出问题
-        while self.working_status == False and self.socket_node != None:
+        with self.threading_lock:
+            if self.socket_node == None:  # 判断是否为空
+                return False
             tcp_data = self.__e_recv(0)
-            if tcp_data == None:
-                break
-            tcp_data = None
-            error_i = error_i + 1
-            assert error_i < 1000, "do_heart_beat error_i >1000"
+            while tcp_data != None and self.socket_node == None:
+                tcp_data = self.__e_recv(0)
 
         # 超时太久就丢掉了，不再持有这个过期的链接了
         if self.is_line_out() == True:
@@ -441,6 +475,10 @@ class MyETcp:
             if type(str_message) != str:
                 continue
             # print(str_message)
+            # 在这里插入记录日志功能的代码，日志格式可能会比较随意，后面 __re_msg_data 会有正则校验。
+            if str_jb == "l":  # log
+                continue
+
             str_message = self.__re_msg_data.match(str_message)
             if type(str_message) != re.Match:
                 MyPrintE.log_print("未采集到报错信息", (str_jb, int_jb_id, str_message))
