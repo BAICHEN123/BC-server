@@ -14,7 +14,7 @@
 import socket
 import MyPrintE
 import time
-import re,sys
+import re, sys
 import threading
 from Mymysql import Mymysql
 from MySmtp import send_email_warning
@@ -41,6 +41,14 @@ class TCPBytesData:
             self.len = bytes_data[1:3]
         if len(bytes_data) > 3:
             self.data = bytes_data[3:]
+
+    def __str__(self) -> str:
+        if self.len == 0:
+            return f"{self.__class__}:None"
+        elif self.len == 3:
+            return f"{self.__class__} type {self.type} len {self.len}"
+        elif self.len > 3:
+            return f"{self.__class__} type {self.type} len {self.len} data:{self.data}"
 
 
 """记录一个用户某一时刻离线的所有设备"""
@@ -290,9 +298,9 @@ class MyETcp:
                         len1 - len(bytes_TCP_data)
                     )  # 接收套接字
                     bytes_TCP_data = bytes_TCP_data + bytes_TCP_data1
-                if time.time() - timestart>float_time_out_s:
+                if time.time() - timestart > float_time_out_s:
                     MyPrintE.log_print(
-                        f"接受数据超时 ",{'line':sys._getframe().f_lineno, 'file': __file__,}
+                        "接受数据超时", line=MyPrintE.get_line().f_lineno, file_name=__file__
                     )
 
                 assert len(bytes_TCP_data) == len1, "收到的长度和指定的长度不同"
@@ -350,22 +358,25 @@ class MyETcp:
 
     def send_data_to_equipment_of_lock(self, str_send_data, float_time_out_s=3.0):
         if self.socket_node == None:  # 判断是否为空
-            return False 
+            return False
         # 清除掉所有的旧数据
         self.__clear_recv_cache_of_lock()  # 返回值就不管了，反正后面还会进行非空判断
         # 发送指令#send只是把数据复制到缓存里面去，设置时间没啥卵用
         if self.e_send(str_send_data) == False:
             return False
         # 接收返回的数据
-        start_time = time.time() 
+        start_time = time.time()
         tcp_date = TCPBytesData(self.__e_recv(float_time_out_s))
         while tcp_date.len > 0:
             if tcp_date.type in [
-                35,# '#' 的ASCII是35
-                64,#'@'==64
-                76,#'L'==76
-                68,#'D'==68
-            ]:   # '\t' 的ASCII是9
+                35,  # '#' 的ASCII是35,'I'.encode()[0]
+                64,  #'@'==64
+                67,  #'C'
+                68,  #'D'==68
+                73,  #'I'
+                76,  #'L'==76
+                109,  #'m'
+            ]:  # '\t' 的ASCII是9
                 break
             elif tcp_date.type == 9:
                 # 重新计算还可以阻塞多少S
@@ -377,7 +388,11 @@ class MyETcp:
                 start_time = time.time()  # 重新掐表
                 tcp_date = TCPBytesData(self.__e_recv(float_time_out_s))
             else:
-                MyPrintE.log_print("send_data_to_equipment else 1")
+                MyPrintE.log_print(
+                    "send_data_to_equipment else 1",
+                    line=MyPrintE.get_line().f_lineno,
+                    file_name=__file__,
+                )
                 print(tcp_date)
                 tcp_date = None
                 break
@@ -476,12 +491,17 @@ class MyETcp:
                 continue
             # print(str_message)
             # 在这里插入记录日志功能的代码，日志格式可能会比较随意，后面 __re_msg_data 会有正则校验。
-            if str_jb == "l":  # log
-                continue
+            # if str_jb == "l":  # log
+            #     continue
 
             str_message = self.__re_msg_data.match(str_message)
             if type(str_message) != re.Match:
-                MyPrintE.log_print("未采集到报错信息", (str_jb, int_jb_id, str_message))
+                MyPrintE.log_print(
+                    "未采集到报错信息",
+                    (str_jb, int_jb_id, str_message),
+                    line=MyPrintE.get_line().f_lineno,
+                    file_name=__file__,
+                )
                 continue
             str_message = str_message.group(1)
 
@@ -495,7 +515,12 @@ class MyETcp:
                     continue
             # 我这里把相同报错的时间间隔写死了，以后的话可以查数据库，根据用户的配置来定制
             elif time.time() - self.dict_msg[int_jb_id] < 3600:
-                MyPrintE.log_print("时候未到", (self.dict_msg[int_jb_id], str_message))
+                MyPrintE.log_print(
+                    "时候未到",
+                    (self.dict_msg[int_jb_id], str_message),
+                    line=MyPrintE.get_line().f_lineno,
+                    file_name=__file__,
+                )
                 pass
             elif str_jb == "w":
                 self.dict_msg[int_jb_id] = time.time()
@@ -508,7 +533,11 @@ class MyETcp:
                 list_message.append(str(int_jb_id) + "</td><td>" + str_message)
                 pass
             else:
-                MyPrintE.log_print("do_udp_data else error")
+                MyPrintE.log_print(
+                    "do_udp_data else error",
+                    line=MyPrintE.get_line().f_lineno,
+                    file_name=__file__,
+                )
         if len(list_message) > 0:
             str_send_message_data = (
                 "<tr><td>ID</td><td>错误信息</td></tr><tr><td>"
@@ -537,7 +566,10 @@ class MyETcp:
             str_e_data = self.send_data_to_equipment(str_send)
             if str_e_data != str_send:
                 MyPrintE.log_print(
-                    "str_e_data!= str_send", (self.INT_EID, str_send, str_e_data)
+                    "str_e_data!= str_send",
+                    (self.INT_EID, str_send, str_e_data),
+                    line=MyPrintE.get_line().f_lineno,
+                    file_name=__file__,
                 )
             return
 
@@ -557,7 +589,10 @@ class MyETcp:
                     str_req = et.send_data_to_equipment(dict_eid_data[item[0]])
                     if type(str_req) != bytes:
                         MyPrintE.log_print(
-                            "__do_message", (str_req, item[0], dict_eid_data[item[0]])
+                            "__do_message",
+                            (str_req, item[0], dict_eid_data[item[0]]),
+                            line=MyPrintE.get_line().f_lineno,
+                            file_name=__file__,
                         )
                     dict_eid_data.pop(item[0])  # 如果刚好发送完，就不用启动下一个循环了
             else:
@@ -569,7 +604,12 @@ class MyETcp:
                 continue
             str_req = et.send_data_to_equipment(data)
             if type(str_req) != bytes:
-                MyPrintE.log_print("__do_message", (str_req, eid, data))
+                MyPrintE.log_print(
+                    "__do_message",
+                    (str_req, eid, data),
+                    line=MyPrintE.get_line().f_lineno,
+                    file_name=__file__,
+                )
         return
 
     """处理警告消息"""
@@ -595,7 +635,10 @@ class MyETcp:
         for item in list_sql_email:
             send_email_warning(item[0], item[1], item[2], str_message)
             MyPrintE.log_print(
-                " __do_warning ", ((item[0], item[1], item[2], str_message))
+                " __do_warning ",
+                ((item[0], item[1], item[2], str_message)),
+                line=MyPrintE.get_line().f_lineno,
+                file_name=__file__,
             )
         return
 
@@ -613,14 +656,24 @@ class MyETcp:
                 i = 0
                 str_req = self.send_data_to_equipment(msg)
                 if type(str_req) != bytes:
-                    MyPrintE.log_print(" send_jiantin ", (self.INT_EID, msg, str_req))
+                    MyPrintE.log_print(
+                        " send_jiantin ",
+                        (self.INT_EID, msg, str_req),
+                        line=MyPrintE.get_line().f_lineno,
+                        file_name=__file__,
+                    )
                 # print("str_req",str_req)
                 # 对str_req处理，可以获得监听的插入结果
                 msg = ""
         if msg != "":
             str_req = self.send_data_to_equipment(msg)
             if type(str_req) != bytes:
-                MyPrintE.log_print(" send_jiantin ", (self.INT_EID, msg, str_req))
+                MyPrintE.log_print(
+                    " send_jiantin ",
+                    (self.INT_EID, msg, str_req),
+                    line=MyPrintE.get_line().f_lineno,
+                    file_name=__file__,
+                )
         self.re_jiantin(sql)
 
     def re_jiantin(self, sql):
