@@ -11,6 +11,7 @@ import Mykeyer
 import MyPrintE
 import Blackip
 import MySmtp
+import OTAFileRead
 from Mymysql import Mymysql
 from MySmtp import send_email_yanzhenma, init_email_passwd
 from MyETcp import MyETcp
@@ -434,7 +435,6 @@ class thread_clear_dict_time(threading.Thread):
 
 
 def new_a_thread_clear_dict_time():
-    # 新建一个下载进程，并开始
     new_thread = thread_clear_dict_time()
     new_thread.start()
 
@@ -1964,6 +1964,9 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
 
 if __name__ == "__main__":
     # print("主线程pid=",os.getpid())
+    # OTAFileRead.flush_ota_dir(mode=True) #用比较严格的模式检查文件
+    OTAFileRead.thread_init_ota()
+
     if os.path.exists("./head") == False:
         print("缺少head文件夹,是否新建？yes？")
         if input() == "yes":
