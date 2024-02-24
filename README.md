@@ -13,6 +13,10 @@
 
 ### 使用方式
 我只在我的Ubuntu 22.04.3 LTS (GNU/Linux 6.2.0-37-generic x86_64)系统验证过  
+inotifywait 3.22.1.0   
+```
+apt install inotify-tools
+```
 mysql  Ver 8.0.35-0ubuntu0.22.04.1 for Linux on x86_64 ((Ubuntu))   
 Python 3.10.12   
 pip mysql-connector                       2.2.9

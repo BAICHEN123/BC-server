@@ -15,6 +15,10 @@ Documentation for the other two repositories will be released later.
 
 ### Usage
 I have only tested it on my Ubuntu 22.04.3 LTS (GNU/Linux 6.2.0-37-generic x86_64) system.  
+inotifywait 3.22.1.0   
+```
+apt install inotify-tools
+```
 MySQL Version 8.0.35-0ubuntu0.22.04.1 for Linux on x86_64 ((Ubuntu))   
 Python 3.10.12   
 pip mysql-connector 2.2.9
