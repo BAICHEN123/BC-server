@@ -3,6 +3,12 @@ import threading
 from datetime import datetime
 import MyPrintE
 
+"""
+检查 ota_dir_name 变量指定的文件夹下的节点编译文件，根据节点代码中定义的 OTA_SERVER_FIND_TAG 在编译后的数据判断对应使用该代码的节点是否需要更新。
+
+"""
+
+
 # ok_bin_name = re.compile("\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-.+.bin")
 re_bin_data = re.compile(
     "__DATE__([a-zA-Z\d]{3} \d{2} \d{4})__TIME__([:\d]{8})__FILE__(.+)"
