@@ -106,7 +106,7 @@ def thread_init_ota():
 def init_ota():
     try:
         flush_ota_dir()
-        while os.system("""inotifywait -r -e "close_write,create,delete" ./ """) == 0:
+        while os.system("""inotifywait -r -e "close_write,create,delete" ./OTAFile """) == 0:
             time.sleep(1)
             flush_ota_dir()
     except KeyboardInterrupt as e:

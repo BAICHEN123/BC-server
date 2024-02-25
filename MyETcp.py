@@ -37,11 +37,14 @@ class TCPBytesData:
         self.data = None
         if type(bytes_data) != bytes:
             return
-        if len(bytes_data) == 3:
-            self.type = bytes_data[0]
-            self.len = bytes_data[1:3]
-        if len(bytes_data) > 3:
-            self.data = bytes_data[3:]
+        data_size = len(bytes_data)
+        if data_size < 3:
+            return
+        self.type = bytes_data[0]
+        self.len = int.from_bytes(bytes_data[1:3], "big")
+        if data_size == 3:
+            return
+        self.data = bytes_data[3:]
 
     def __str__(self) -> str:
         if self.len == 0:
@@ -240,7 +243,9 @@ class MyETcp:
     """添加了异常处理的tcp数据发送"""
 
     def e_send(self, data, float_time_out_s=3.0):
-        assert type(data) == str or type(data) == bytes, "ETcp type(str_data)!=str,bytes"
+        assert (
+            type(data) == str or type(data) == bytes
+        ), "ETcp type(str_data)!=str,bytes"
         assert (
             type(float_time_out_s) == float or type(float_time_out_s) == int
         ) and float_time_out_s >= 0, (
@@ -252,7 +257,15 @@ class MyETcp:
         if type(data) != bytes:
             data = data.encode(self.str_bm)
         try:
-            self.socket_node.send(data)
+            data_len = len(data)
+            if data_len < 1000:
+                self.socket_node.send(data)
+            else:
+                for i in range(1000, data_len, 1000):
+                    self.socket_node.send(data[i - 1000 : i])
+                    time.sleep(0.05)
+                if data_len / 1000 * 1000 <= data_len:
+                    self.socket_node.send(data[int(data_len / 1000) * 1000 : data_len])
         except BrokenPipeError as e:
             # 管道已经被破坏
             # MyPrintE.e_print(e,'eid='+str(self.INT_EID))
@@ -273,7 +286,6 @@ class MyETcp:
             return False
         return True
 
-
     """添加了异常处理的tcp数据请求"""
 
     def __e_recv(self, float_time_out_s=3.0):
@@ -289,9 +301,7 @@ class MyETcp:
         try:
             timestart = time.time()
             bytes_type_len = self.socket_node.recv(3)  # 接收套接字
-            if bytes_type_len != 3:
-                MyPrintE.log_print(f"收到的长度 不足3 bytes_type_len {len(bytes_type_len)}")
-            else:
+            if len(bytes_type_len) == 3:
                 e_type = bytes_type_len[0]
                 len1 = int.from_bytes(bytes_type_len[1:3], "big")
                 bytes_TCP_data = self.socket_node.recv(len1)  # 接收套接字
@@ -722,34 +732,59 @@ class MyETcp:
         if time.time() - self.time_out > 180 and self.line_out_send_email_fig == False:
             self.line_out_send_email_fig = True
             return True
-        
+
     # 判断是否需要更新
-    def need_updata(self,OTA_SERVER_FIND_TAG) -> int:
+    def need_updata(self, OTA_SERVER_FIND_TAG) -> int:
         if type(OTA_SERVER_FIND_TAG) != str or len(OTA_SERVER_FIND_TAG) < 1:
             return 0
         if type(self.need_updata) == OTAFileRead.ReadOTABin:
             return 1
-        self.need_updata =  OTAFileRead.is_need_updata(OTA_SERVER_FIND_TAG)
+        self.need_updata = OTAFileRead.is_need_updata("esp8266", OTA_SERVER_FIND_TAG)
         if type(self.need_updata) == OTAFileRead.ReadOTABin:
             return 1
         self.need_updata = None
         return 0
-    
+
     def send_OTA_file(self):
         assert type(self.need_updata) == OTAFileRead.ReadOTABin
+        with self.threading_lock:
+            tcp_date = TCPBytesData(self.__e_recv())
+            if tcp_date.len == 0:
+                MyPrintE.log_print(
+                    "TCPBytesData len 0",
+                    line=MyPrintE.get_line().f_lineno,
+                    file_name=__file__,
+                )
+                return
+            if tcp_date.type != 117:  # u
+                MyPrintE.log_print(
+                    f"TCPBytesData type {tcp_date.type}",
+                    line=MyPrintE.get_line().f_lineno,
+                    file_name=__file__,
+                )
+                return
+            str1 = self.bytes_to_str(tcp_date.data)
+            if str1 != "start":
+                MyPrintE.log_print(
+                    f"TCPBytesData data {str1}",
+                    line=MyPrintE.get_line().f_lineno,
+                    file_name=__file__,
+                )
+                return
+            pass
+
         bytes_file = self.need_updata.get_bin_bytes()
-        end = self.send_data_to_equipment(bytes_file,10.0)
+        end = self.send_data_to_equipment(bytes_file, 30.0)
         end = self.bytes_to_str(end)
         if str(len(bytes_file)) == end:
             MyPrintE.log_print(
-                "send_OTA_file ok!!!", 
+                "send_OTA_file ok!!!",
                 line=MyPrintE.get_line().f_lineno,
                 file_name=__file__,
             )
         else:
             MyPrintE.log_print(
-                f"send_OTA_file error!!!{end}", 
+                f"send_OTA_file error!!!{end}",
                 line=MyPrintE.get_line().f_lineno,
                 file_name=__file__,
             )
-

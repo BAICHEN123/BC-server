@@ -302,7 +302,7 @@ class TCP_link_work_thread(threading.Thread):
             dict_tcp_data[self.list_data_class_name[0]],
             self.TCP_link,
         )  # TCP链接
-        if e_obj == 0 or type(e_obj) != MyETcp.MyETcp:
+        if e_obj == 0 or type(e_obj) != MyETcp:
             self.TCP_link.close()
             return
         updata_fig = 0
@@ -343,7 +343,7 @@ class TCP_link_work_thread(threading.Thread):
         self.TCP_link.send(msg.encode("gbk"))
         # 只需要在这里延迟，这里是没有返回数据的
         time.sleep(0.05)
-        if updata_fig != 0:
+        if updata_fig == 0:
             e_obj.send_jiantin(self.mymysql)
         else:
             e_obj.send_OTA_file()
@@ -376,7 +376,7 @@ class TCP_link_work_thread(threading.Thread):
         if a != None and len(a) == 1 and len(a[0]) == 2:
             eid = a[0][0]
             e_obj = DictTcp().set_e_tcp(eid, socket_TCP_link, a[0][1])
-            if e_obj == None or type(e_obj) != MyETcp.MyETcp:
+            if e_obj == None or type(e_obj) != MyETcp:
                 return 0
             dict_temporary_eid[chip_id] = [eid, int(time.time())]
             return e_obj
