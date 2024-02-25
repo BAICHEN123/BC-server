@@ -16,6 +16,7 @@ import MyPrintE
 import time
 import re, sys
 import threading
+import OTAFileRead
 from Mymysql import Mymysql
 from MySmtp import send_email_warning
 from MySmtp import email_send_str
@@ -107,8 +108,9 @@ class DictTcp:
             old_msg = old_msg.dict_msg
         except KeyError:
             old_msg = None
-        dict_TCP[int_eid] = MyETcp(int_eid, tcp_link, bm, old_msg)
-        return True
+        e_obj = MyETcp(int_eid, tcp_link, bm, old_msg)
+        dict_TCP[int_eid] = e_obj
+        return e_obj
 
     def get_e_tcp(self, int_eid):
         global dict_TCP
@@ -224,6 +226,7 @@ class MyETcp:
         self.time_out = time.time()
         self.socket_node.settimeout(None)  # 设置为永不超时
         self.bytes_last_data = None
+        self.updata_data = None
 
     """销毁对象之前先关闭链接"""
 
@@ -236,8 +239,8 @@ class MyETcp:
 
     """添加了异常处理的tcp数据发送"""
 
-    def e_send(self, str_data, float_time_out_s=3.0):
-        assert type(str_data) == str, "ETcp type(str_data)!=str"
+    def e_send(self, data, float_time_out_s=3.0):
+        assert type(data) == str or type(data) == bytes, "ETcp type(str_data)!=str,bytes"
         assert (
             type(float_time_out_s) == float or type(float_time_out_s) == int
         ) and float_time_out_s >= 0, (
@@ -246,8 +249,10 @@ class MyETcp:
         if self.socket_node == None:  # 判断是否为空
             return False
         self.socket_node.settimeout(float_time_out_s)  # 设置等待时间上限
+        if type(data) != bytes:
+            data = data.encode(self.str_bm)
         try:
-            self.socket_node.send(str_data.encode(self.str_bm))
+            self.socket_node.send(data)
         except BrokenPipeError as e:
             # 管道已经被破坏
             # MyPrintE.e_print(e,'eid='+str(self.INT_EID))
@@ -267,6 +272,7 @@ class MyETcp:
             self.socket_node = None
             return False
         return True
+
 
     """添加了异常处理的tcp数据请求"""
 
@@ -376,6 +382,7 @@ class MyETcp:
                 73,  #'I'
                 76,  #'L'==76
                 109,  #'m'
+                117,  #'u'
             ]:  # '\t' 的ASCII是9
                 break
             elif tcp_date.type == 9:
@@ -427,15 +434,15 @@ class MyETcp:
             while tcp_data != None and self.socket_node == None:
                 tcp_data = self.__e_recv(0)
 
-        # 超时太久就丢掉了，不再持有这个过期的链接了
-        if self.is_line_out() == True:
-            self.socket_node = None
-            return False
-        self.e_send(str_data)
-        if self.socket_node == None:  # 判断是否为空,空则说明链接裂开了
-            # MyPrintE.log_print('do_heart_beat eid='+str(self.INT_EID))
-            return False
-        return True
+            # 超时太久就丢掉了，不再持有这个过期的链接了
+            if self.is_line_out() == True:
+                self.socket_node = None
+                return False
+            self.e_send(str_data)
+            if self.socket_node == None:  # 判断是否为空,空则说明链接裂开了
+                # MyPrintE.log_print('do_heart_beat eid='+str(self.INT_EID))
+                return False
+            return True
 
     """将字节内容转换成字符串"""
 
@@ -715,3 +722,34 @@ class MyETcp:
         if time.time() - self.time_out > 180 and self.line_out_send_email_fig == False:
             self.line_out_send_email_fig = True
             return True
+        
+    # 判断是否需要更新
+    def need_updata(self,OTA_SERVER_FIND_TAG) -> int:
+        if type(OTA_SERVER_FIND_TAG) != str or len(OTA_SERVER_FIND_TAG) < 1:
+            return 0
+        if type(self.need_updata) == OTAFileRead.ReadOTABin:
+            return 1
+        self.need_updata =  OTAFileRead.is_need_updata(OTA_SERVER_FIND_TAG)
+        if type(self.need_updata) == OTAFileRead.ReadOTABin:
+            return 1
+        self.need_updata = None
+        return 0
+    
+    def send_OTA_file(self):
+        assert type(self.need_updata) == OTAFileRead.ReadOTABin
+        bytes_file = self.need_updata.get_bin_bytes()
+        end = self.send_data_to_equipment(bytes_file,10.0)
+        end = self.bytes_to_str(end)
+        if str(len(bytes_file)) == end:
+            MyPrintE.log_print(
+                "send_OTA_file ok!!!", 
+                line=MyPrintE.get_line().f_lineno,
+                file_name=__file__,
+            )
+        else:
+            MyPrintE.log_print(
+                f"send_OTA_file error!!!{end}", 
+                line=MyPrintE.get_line().f_lineno,
+                file_name=__file__,
+            )
+

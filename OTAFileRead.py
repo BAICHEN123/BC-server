@@ -51,12 +51,14 @@ class ReadOTABin:
             return
         self.ok_file_name = os.path.split(file_name)[1]
         self.ok_path = file_name
+        self.file_size = os.path.getsize(self.ok_path)
 
     def read_ok_name(self, file_name):
         global re_bin_data
         f = open(file_name, "rb")
         bytes1 = f.read()
         f.close()
+        self.file_size = len(bytes1)
         start_id = bytes1.find("__DATE__".encode())
         if start_id < 1:
             return

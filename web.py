@@ -294,7 +294,7 @@ class TCP_link_work_thread(threading.Thread):
         # 这里应当对收到的数据进项校验，校验是否合法
         # 数据校验放到下面函数里了
         # 根据设备提供的信息，查询或分配一个eid
-        eid = self.dict_TCP_add(
+        e_obj = self.dict_TCP_add(
             dict_tcp_data[self.list_data_class_name[3]],  # MAC
             dict_tcp_data[self.list_data_class_name[2]],  # 局域网IP
             self.IPadd[0],  # TCP链接IP
@@ -302,6 +302,17 @@ class TCP_link_work_thread(threading.Thread):
             dict_tcp_data[self.list_data_class_name[0]],
             self.TCP_link,
         )  # TCP链接
+        if e_obj == 0 or type(e_obj) != MyETcp.MyETcp:
+            self.TCP_link.close()
+            return
+        updata_fig = 0
+        file_size = 0
+        if "updata" in dict_tcp_data:
+            updata_fig = e_obj.need_updata(dict_tcp_data["updata"])
+            if updata_fig and type(e_obj.need_updata) == OTAFileRead.ReadOTABin:
+                file_size = e_obj.need_updata.file_size
+
+        eid = e_obj.INT_EID
         if eid == 0:
             self.TCP_link.close()
             return
@@ -315,13 +326,27 @@ class TCP_link_work_thread(threading.Thread):
 
         str_heart = time.strftime(DictTcp.STR_TIME, time.localtime())
         # 设置要返回的数据
-        msg = "+EID:" + str(eid) + "\r\n" + str_heart  # 将硬件的数据库id返回回去，用于TCP链接的查找
+        msg = (
+            "+EID:"
+            + str(eid)
+            + "\r\n"
+            + "updata:"
+            + str(updata_fig)
+            + "\r\n"
+            + "size:"
+            + str(file_size)
+            + "\r\n"
+            + str_heart
+        )  # 将硬件的数据库id返回回去，用于TCP链接的查找
         # 反正这里发的是ASCII数据，编码随意喽
         # 不要关闭TCP链接，TCP链接将会用于用户对设备操作
         self.TCP_link.send(msg.encode("gbk"))
         # 只需要在这里延迟，这里是没有返回数据的
         time.sleep(0.05)
-        DictTcp().get_e_tcp(eid).send_jiantin(self.mymysql)
+        if updata_fig != 0:
+            e_obj.send_jiantin(self.mymysql)
+        else:
+            e_obj.send_OTA_file()
 
     def dict_TCP_add(
         self, str_MAC, str_lan_IP, str_wan_IP, chip_id, class_id, socket_TCP_link
@@ -350,9 +375,11 @@ class TCP_link_work_thread(threading.Thread):
         # a=[(19, 'utf-8')]
         if a != None and len(a) == 1 and len(a[0]) == 2:
             eid = a[0][0]
-            DictTcp().set_e_tcp(eid, socket_TCP_link, a[0][1])
+            e_obj = DictTcp().set_e_tcp(eid, socket_TCP_link, a[0][1])
+            if e_obj == None or type(e_obj) != MyETcp.MyETcp:
+                return 0
             dict_temporary_eid[chip_id] = [eid, int(time.time())]
-            return eid
+            return e_obj
         else:
             MyPrintE.log_print(
                 "dict_TCP_add sql 返回数据有问题",
