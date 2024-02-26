@@ -434,6 +434,8 @@ class MyETcp:
     """处理心跳包的缓存内容，并返回数据"""
 
     def do_heart_beat(self, str_data):
+        if self.need_updata !=None:
+            return True
         if self.socket_node == None:  # 判断是否为空
             return False
         # 如果当前的状态是空闲的就清除数据
@@ -449,8 +451,7 @@ class MyETcp:
                 self.socket_node = None
                 return False
             self.e_send(str_data)
-            if self.socket_node == None:  # 判断是否为空,空则说明链接裂开了
-                # MyPrintE.log_print('do_heart_beat eid='+str(self.INT_EID))
+            if self.socket_node == None:  # 判断是否为空,空则说明链接裂开了 
                 return False
             return True
 
