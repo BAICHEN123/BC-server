@@ -263,7 +263,7 @@ class MyETcp:
             else:
                 for i in range(1000, data_len, 1000):
                     self.socket_node.send(data[i - 1000 : i])
-                    time.sleep(0.05)
+                    # time.sleep(0.05)
                 if data_len / 1000 * 1000 <= data_len:
                     self.socket_node.send(data[int(data_len / 1000) * 1000 : data_len])
         except BrokenPipeError as e:
