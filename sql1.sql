@@ -9,9 +9,9 @@ warnings;
 
 #show variables like 'autocommit';#查看是否自动提交
 #set autocommit = 0;#关闭自动提交
-drop database test1;
-create database test1;
-use test1;
+drop database bc_server;
+create database bc_server;
+use bc_server;
 #用户表##
 warnings;
 
@@ -406,13 +406,13 @@ delimiter ;
 
 
 
-#创建服务器链接账户##
-create user 'user_test1'@'localhost' identified by '%^TY56ty';
-grant select,insert,update on test1.* to 'user_test1'@'localhost';
-grant delete on test1.* to 'user_test1'@'localhost';
-ALTER USER 'user_test1'@'localhost' IDENTIFIED WITH mysql_native_password BY '%^TY56ty';
-grant delete on test1.user_and_shebei to 'user_test1'@'localhost';
-GRANT EXECUTE ON test1.*  to 'user_test1'@'localhost';
+#创建服务器链接账户##user_bc_server
+create user 'user_bc_server'@'localhost' identified by '%^TY56ty';
+grant select,insert,update on bc_server.* to 'user_bc_server'@'localhost';
+grant delete on bc_server.* to 'user_bc_server'@'localhost';
+ALTER USER 'user_bc_server'@'localhost' IDENTIFIED WITH mysql_native_password BY '%^TY56ty';
+grant delete on bc_server.user_and_shebei to 'user_bc_server'@'localhost';
+GRANT EXECUTE ON bc_server.*  to 'user_bc_server'@'localhost';
 flush privileges;
 
 #SQL_SELECT_GET_EID='SELECT COUNT(she_bei.id),she_bei.id,bian_ma 
