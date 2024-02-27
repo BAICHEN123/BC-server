@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #utf-8
-DEBUG = True
+DEBUG = False
 if DEBUG:
     HTTP_PORT = 8079
     TCP_PORT = 9997
