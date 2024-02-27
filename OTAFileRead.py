@@ -2,12 +2,16 @@ import os, re, time
 import threading
 from datetime import datetime
 import MyPrintE
+import MyConfig
 
 """
 检查 ota_dir_name 变量指定的文件夹下的节点编译文件，根据节点代码中定义的 OTA_SERVER_FIND_TAG 在编译后的数据判断对应使用该代码的节点是否需要更新。
 
 """
 
+ota_dir_name = MyConfig.OTA_DIR_NAME
+ota_e_tag = ["esp8266", "test"]
+__dict_tag = dict()
 
 # ok_bin_name = re.compile("\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-.+.bin")
 re_bin_data = re.compile(
@@ -103,9 +107,6 @@ class ReadOTABin:
     
 
 
-ota_dir_name = "./OTAFile"
-ota_e_tag = ["esp8266", "test"]
-__dict_tag = dict()
 
 
 class Thread_init_ota(threading.Thread):

@@ -1,9 +1,10 @@
 ﻿import os
+import MyConfig
 """请确保传入的ip是合法ip，此文件不做ip的合法校验"""
 
 __dict_black_ip = dict()  # 储存正在计数的ip
 __list_black_ip = dict()  # 储存彻底拉黑的ip
-__str_file_name = "blackip.txt"
+__str_file_name = MyConfig.BLACKIP_FILE_NAME
 
 
 def __file_read(str_file_name=__str_file_name):

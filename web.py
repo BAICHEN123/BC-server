@@ -7,6 +7,7 @@ import re
 import os
 import time
 import hashlib
+import MyConfig
 import Mykeyer
 import MyPrintE
 import Blackip
@@ -103,6 +104,8 @@ print(get_line().f_lineno, __file__)
 自动记录程序出错原因并重启程序？
 ui或者网页控制台？qt？
 """
+
+user_head_jpg_dir = MyConfig.USER_HEAD_JPG_DIR
 
 # 储存TCP链接的字典
 dict_time = dict()
@@ -402,10 +405,10 @@ class TCP_thread(threading.Thread):
         serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         # 启动服务器，""本应填充计算机名或者ip地址，""则为使用本机全部的地址，第二个整型为端口号
-        serversocket.bind(("", 9999))
+        serversocket.bind(("", MyConfig.TCP_PORT))
         # 设置最大连接数，超过后排队
         serversocket.listen(1000000000)  # 最大值为C语言的long的最大值
-        print("TCP-9999服务已经启动")
+        print(f"TCP-{MyConfig.TCP_PORT}服务已经启动")
         while True:
             # 建立客户端连接
             # clientsocket,addr = serversocket.accept()#监听链接
@@ -422,8 +425,8 @@ class UDP_thread(threading.Thread):
         # print("UDP_thread pid=",os.getpid())
         UDP_s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         # 启动服务器，""本应填充计算机名或者ip地址，""则为使用本机全部的地址，第二个整型为端口号
-        UDP_s.bind(("", 9998))
-        print("UDP-9998服务已经启动")
+        UDP_s.bind(("", MyConfig.UDP_PORT))
+        print(f"UDP-{MyConfig.UDP_PORT}服务已经启动")
         i = 0
         while True:
             # data1,user_add=UDP_s.recvfrom(1024)#接收套接字
@@ -1992,17 +1995,19 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
 if __name__ == "__main__":
     # print("主线程pid=",os.getpid())
     # OTAFileRead.flush_ota_dir(mode=True) #用比较严格的模式检查文件
+    init_email_passwd()
     OTAFileRead.thread_init_ota()
 
-    if os.path.exists("./head") == False:
-        print("缺少head文件夹,是否新建？yes？")
-        if input() == "yes":
-            os.mkdir("head", 755)
-    init_email_passwd()
+    if os.path.exists(user_head_jpg_dir) == False:
+        print(f"新建 user_head_jpg_dir {user_head_jpg_dir}")
+        OTAFileRead.make_dir_path(user_head_jpg_dir)
+    if os.path.isdir(user_head_jpg_dir) == False:
+        print(f"error user_head_jpg_dir {user_head_jpg_dir}")
+        exit(1)
     Blackip.black_ip_init()
     new_a_thread_clear_dict_time()
     open_TCP_UDP()
-    httpd = ThreadingHTTPServer(("", 8080), RequestHandler)
+    httpd = ThreadingHTTPServer(("", MyConfig.HTTP_PORT), RequestHandler)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

@@ -1,0 +1,20 @@
+drop database bc_server;
+create database bc_server; 
+mysqldump test1 -u root -p > mv_test1
+mysql bc_server -u root -p < mv_test1
+
+drop database test1;
+create database test1; 
+mysqldump bc_server -u root -p > mv_bc_server
+mysql test1 -u root -p < mv_bc_server
+
+
+
+#创建服务器链接账户##
+create user 'user_bc_server'@'localhost' identified by '%^TY56ty';
+grant select,insert,update on bc_server.* to 'user_bc_server'@'localhost';
+grant delete on bc_server.* to 'user_bc_server'@'localhost';
+ALTER USER 'user_bc_server'@'localhost' IDENTIFIED WITH mysql_native_password BY '%^TY56ty';
+grant delete on bc_server.user_and_shebei to 'user_bc_server'@'localhost';
+GRANT EXECUTE ON bc_server.*  to 'user_bc_server'@'localhost';
+flush privileges;

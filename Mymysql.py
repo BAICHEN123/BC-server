@@ -1,20 +1,21 @@
 import mysql.connector
 import MyPrintE
 import time
+import threading
+import MyConfig
 from MySmtp import email_send_str
 
-
-CHARSET = "utf8mb4"
-HOST = "localhost"
-USER = "user_test1"
-# PASSWD="12345678"
-PASSWD = "%^TY56ty"
-DATABASE = "test1"
-AUTH_PLUGIN = "mysql_native_password"
+CHARSET = MyConfig.SQL_CHARSET
+HOST = MyConfig.SQL_HOST
+USER = MyConfig.SQL_USER
+PASSWD = MyConfig.SQL_PASSWD
+DATABASE = MyConfig.SQL_DATABASE
+AUTH_PLUGIN = MyConfig.SQL_AUTH_PLUGIN
 
 
 sql_link_couunt = 0
 list_sql_link = list()
+list_sql_link_lock = threading.Lock()
 
 
 # select b.id,b.fid,b.jid,f.eid,f.aname,f.afuhao,f.did,f.canzhi,j.eid,j.gname,j.gdata from ld_bangdin b,ld_faqi f,ld_jieshou j where b.uid=1 and f.id=b.fid and  j.id=b.jid;
@@ -81,7 +82,7 @@ class MySqlLink:
                     e
                 )  # print(time.strftime("%Y-%m-%d %H:%M:%S  ", time.localtime()),e.with_traceback,"   重新连接数据库失败")
                 email_send_str(
-                    "2280057905@qq.com",
+                    MyConfig.SQL_ERROR_EMAIL,
                     "数据库异常，重连失败"
                     + time.strftime("%Y-%m-%d %H:%M:%S  ", time.localtime()),
                 )
@@ -221,10 +222,10 @@ class Mymysql:
     # {'name': '未闻君名', 'email': '2275442930@qq.com', 'sex': '2', 'user_head_md5': 'dcda1eb07de0a72521140853f28b1488', 'user_head_end': 'head'}
     # sql1=mysql.connector.connect(host="localhost",user="user_test1",passwd="12345678",database="test1",auth_plugin="mysql_native_password")
     def __init__(self):
-        global list_sql_link
-        # sql1=mysql.connector.connect(host="localhost",user="user_test1",passwd="12345678",database="test1",auth_plugin="mysql_native_password")
-        if len(list_sql_link) == 0:
-            list_sql_link.append(MySqlLink())  # 都初始化了，我先放一个链接到列表里
+        global list_sql_link, list_sql_link_lock
+        with list_sql_link_lock:
+            if len(list_sql_link) == 0:
+                list_sql_link.append(MySqlLink())  # 都初始化了，我先放一个链接到列表里
 
     def __del__(self):
         # self.sql1.close()
@@ -232,9 +233,8 @@ class Mymysql:
         # list_sql_link.clear()
         pass
 
-    def get_a_sql_link(self):
+    def get_a_sql_link_of_lock(self):
         # 返回的数据类型是 MySqlLink
-
         global list_sql_link
         for item in list_sql_link:
             if item.sql_status == item.MO_YU:
@@ -261,6 +261,11 @@ class Mymysql:
         # 没办法喽，阻塞了好久，都没有可用的链接
         MyPrintE.log_print("超时未有可用sql链接")
         return None
+
+    def get_a_sql_link(self):
+        global list_sql_link_lock
+        with list_sql_link_lock:
+            return self.get_a_sql_link_of_lock()
 
     def list_tuple_to_list(self, list1):
         try:

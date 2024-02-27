@@ -8,15 +8,18 @@ from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 import os
+import MyConfig
 
-HOST = "smtp.qq.com"
+HOST = MyConfig.EMAIL_HOST
 # SUBJECT ='何辰川的APP'
-FROM = "2280057905@qq.com"
-str_email_password = "ztyhzosrkgkzdiif"
-PORT = 465
+FROM = MyConfig.EMAIL_FROM
+str_email_password = ""
+if MyConfig.EMAIL_STR_EMAIL_PASSWORD:
+    str_email_password = MyConfig.EMAIL_STR_EMAIL_PASSWORD
+PORT = MyConfig.EMAIL_PORT
 conect_lock = threading.Lock()
 
-__str_email_password_file_name = "email_password.txt"
+__str_email_password_file_name = MyConfig.EMAIL_PASSWORD_FILE_NAME
 
 
 def get_str_email_password():
