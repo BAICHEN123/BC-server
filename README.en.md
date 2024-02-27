@@ -2,6 +2,12 @@
 
 **Thanks Chat-GPT for the translation**
 
+### New Content
+1. Support for OTA (Over-the-Air updates) has been added.  
+After compiling, copy the generated bin file to the corresponding location under MyConfig.OTA_DIR_NAME directory. The files will be classified based on the compilation date and character information contained in the bin file. Update decisions for corresponding nodes will be made based on the OTA_SERVER_FIND_TAG information sent by the nodes.  
+Firmware of approximately 344400 bytes is transmitted and written in approximately 6109ms, much faster than burning programs via serial port.  
+~~After I finish implementing the node logging feature, I will attempt to debug the program using OTA. After all, breakpoints debugging is not feasible, and OTA burning is faster.~~
+
 ### Other Repositories
 #### Gitee
 [App](https://gitee.com/he_chen_chuan/Mytabs)  
@@ -14,17 +20,21 @@
 Documentation for the other two repositories will be released later.
 
 ### Usage
-I have only tested it on my Ubuntu 22.04.3 LTS (GNU/Linux 6.2.0-37-generic x86_64) system.  
-inotifywait 3.22.1.0   
-```
-apt install inotify-tools
-```
-MySQL Version 8.0.35-0ubuntu0.22.04.1 for Linux on x86_64 ((Ubuntu))   
-Python 3.10.12   
-pip mysql-connector 2.2.9
-```
-python -m pip install mysql-connector
-```
+#### Basic Environment
+I have only validated this on my Ubuntu 22.04.3 LTS (GNU/Linux 6.2.0-37-generic x86_64) system.  
+- inotifywait version 3.22.1.0
+    ```bash
+    sudo apt install inotify-tools
+    ```
+- MySQL version 8.0.35-0ubuntu0.22.04.1 for Linux on x86_64 ((Ubuntu))
+- Python 3.10.12
+- Pip package: mysql-connector 2.2.9
+    ```bash
+    python -m pip install mysql-connector
+    ```
+
+#### Operations
+1. Clone the repository using "git clone" and navigate into the cloned directory using "cd".
 1. First, "git clone" this repository and "cd" into it.
 2. After logging into MySQL, execute the SQL code in the "[sql1.sql](./sql1.sql)" file, which is used to create a new database, tables, triggers, etc., and configure the account and password for program login. Please check if there are any conflicts with related names.
     ```
@@ -38,48 +48,7 @@ python -m pip install mysql-connector
     **Note**: If the file is not found, replace it with the correct relative or absolute path.  
     **Note**: After changing related names, search for and modify them in the code. The code related to MySQL login is mainly in the file [Mymysql.py](./Mymysql.py).  
 3. Modify configurations  
-Currently, there is no support for configuration files. Please modify the code according to the instructions below, as it is currently only used by myself.  
-When there are more "stars," I will consider adding this feature.  
-
-    Modify the email sending server, account, and password for emails  
-    File: [MySmtp.py](./MySmtp.py)
-    ```  
-    HOST = "smtp.qq.com"
-    # SUBJECT ='何辰川的APP'
-    FROM = "2280057905@qq.com"
-    str_email_password = "ztyhzosrkgkzdiif"
-    PORT = 465
-    ```
-    **Note**: After the program starts, it will look for the "email_password.txt" file in the program's running directory to read "str_email_password."  
-    ~~The code's str_email_password is outdated, no need to worry about it.~~  
-    Creating "email_password.txt" reference  
-    ```
-    echo ztyhzosrkgkzdiif >./email_password.txt
-    ```
-    **If not configured, you cannot send the verification code file via email, but you can read the code from the Python program logs.**
-
-    **After changing the port, you need to modify the code on other devices as well.**
-
-    HTTP port for communication with the app  
-    File: [web.py](./web.py)
-    ``` 
-    httpd = ThreadingHTTPServer(("", 8080), RequestHandler)
-    ```
-
-
-    TCP port for communication with ESP8266 Nodes  
-    File: [web.py](./web.py)
-    ```         
-    serversocket.bind(("", 9999))
-    ```
-
-
-    UDP port for communication with ESP8266 Nodes  
-    File: [web.py](./web.py)
-    ```         
-    UDP_s.bind(("", 9998))
-    ```
-
+Frequently used configuration parameters have been moved to "[MyConfig.py](./MyConfig.py)". Please try to guess their purposes based on the names, as there are minimal comments.
 
 4. Start the program.  
     There are two methods: running directly or running the Python program with nohup.  
