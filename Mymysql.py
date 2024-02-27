@@ -220,7 +220,6 @@ class Mymysql:
 
     # 这个http类是单线程工作，有一个sql链接就够了，? 不行了，现在是多线程了，要搞连接池了
     # {'name': '未闻君名', 'email': '2275442930@qq.com', 'sex': '2', 'user_head_md5': 'dcda1eb07de0a72521140853f28b1488', 'user_head_end': 'head'}
-    # sql1=mysql.connector.connect(host="localhost",user="user_test1",passwd="12345678",database="test1",auth_plugin="mysql_native_password")
     def __init__(self):
         global list_sql_link, list_sql_link_lock
         with list_sql_link_lock:
@@ -242,7 +241,6 @@ class Mymysql:
                 return item
         # 程序到这里没有返回说明已经建立的所有链接都被使用了，需要再次创建链接
         if len(list_sql_link) < self.LIST_SQL_LINK_MAX:
-            # sql_i=mysql.connector.connect(host="localhost",user="user_test1",passwd="12345678",database="test1",auth_plugin="mysql_native_password")
             sql_i = MySqlLink()
             list_sql_link.append(sql_i)
             MyPrintE.log_print("产生了一个sql连接,len(list_sql_link)=", len(list_sql_link))

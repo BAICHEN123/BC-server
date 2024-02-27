@@ -28,3 +28,31 @@ ALTER USER 'user_test1'@'localhost' IDENTIFIED WITH mysql_native_password BY '%^
 grant delete on test1.user_and_shebei to 'user_test1'@'localhost';
 GRANT EXECUTE ON test1.*  to 'user_test1'@'localhost';
 flush privileges;
+
+
+# 复制数据库不会复制存储过程，需要执行sql2.sql重新创建
+# cat /etc/mysql/conf.d/mysql.cnf.1
+
+[client]
+default-character-set = utf8mb4
+[mysql]
+default-character-set = utf8mb4
+[mysqld]
+character-set-client-handshake = FALSE
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+
+"collation-server = utf8mb4_unicode_ci"这个东西会导致python报下面的错误。迁移前后的表格都是utf8mb4_0900_ai_ci格式的，但是这个东西让存储过程执行的时候不一样了，然后就报了下面的错误。
+删掉这个配置之后重启mysql “systemctl restart mysql.server”,然后删掉bc_server重新导入一次，并执行sql2里的存储过程
+“”“
+2024-02-27 18:45:16  error    file= /home/hcc/gongcheng/web/the-server/Mymysql.py  line= 430  line= 4301267 (HY000): Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_unicode_ci,IMPLICIT) for operation '=' <built-in method with_traceback of DatabaseError object at 0x7f0cf008cc40> Traceback (most recent call last):
+  File "/home/hcc/gongcheng/web/the-server/Mymysql.py", line 430, in mysql_sql_callproc_1
+    sql_send.callproc(str_callproc_name, tuple_sql_date)
+  File "/home/hcc/.local/lib/python3.10/site-packages/mysql/connector/cursor.py", line 749, in callproc
+    for result in self._connection.cmd_query_iter(call):
+  File "/home/hcc/.local/lib/python3.10/site-packages/mysql/connector/connection.py", line 522, in cmd_query_iter
+    yield self._handle_result(self._send_cmd(ServerCmd.QUERY, statements))
+  File "/home/hcc/.local/lib/python3.10/site-packages/mysql/connector/connection.py", line 395, in _handle_result
+    raise errors.get_exception(packet)
+mysql.connector.errors.DatabaseError: 1267 (HY000): Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT) and (utf8mb4_unicode_ci,IMPLICIT) for operation '='
+”“”
