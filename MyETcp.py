@@ -314,10 +314,10 @@ class MyETcp:
                         len1 - len(bytes_TCP_data)
                     )  # 接收套接字
                     bytes_TCP_data = bytes_TCP_data + bytes_TCP_data1
-                if time.time() - timestart > float_time_out_s:
-                    MyPrintE.log_print(
-                        "接受数据超时", line=MyPrintE.get_line().f_lineno, file_name=__file__
-                    )
+                # if time.time() - timestart > float_time_out_s:
+                #     MyPrintE.log_print(
+                #         "接受数据超时", line=MyPrintE.get_line().f_lineno, file_name=__file__
+                #     )
 
                 assert len(bytes_TCP_data) == len1, "收到的长度和指定的长度不同"
                 self.time_out = time.time()  # 更新最后一次收到数据的时间

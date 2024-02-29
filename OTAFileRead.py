@@ -1,4 +1,5 @@
 import os, re, time
+import subprocess
 import threading
 from datetime import datetime
 import MyPrintE
@@ -18,6 +19,21 @@ re_bin_data = re.compile(
     "__DATE__([a-zA-Z\d]{3} \d{2} \d{4})__TIME__([:\d]{8})__FILE__(.+)"
 )
 
+def execute_command(cmd):
+    try:
+        # 执行命令，捕获标准输出和标准错误
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        
+        # 获取返回值
+        return_code = result.returncode
+        
+        # 获取标准输出和标准错误内容
+        stdout = result.stdout.strip()
+        stderr = result.stderr.strip()
+        
+        return return_code, stdout, stderr
+    except Exception as e:
+        return 1, "", str(e)
 
 # __DATE__Feb 24 2024__TIME__15:01:00__FILE__new_temperature.ino
 def make_dir_path(str_path) -> bool:
@@ -124,9 +140,11 @@ def thread_init_ota():
 def init_ota():
     try:
         flush_ota_dir()
-        while os.system("""inotifywait -r -e "close_write,create,delete" ./OTAFile """) == 0:
+        code,str_print,str_err = execute_command("""inotifywait -r -e "close_write,create,delete" ./OTAFile """)
+        while code == 0:
             time.sleep(1)
             flush_ota_dir()
+            code,str_print,str_err = execute_command("""inotifywait -r -e "close_write,create,delete" ./OTAFile """)
     except KeyboardInterrupt as e:
         pass
 
