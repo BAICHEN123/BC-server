@@ -16,7 +16,7 @@ __dict_tag = dict()
 
 # ok_bin_name = re.compile("\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-.+.bin")
 re_bin_data = re.compile(
-    "__DATE__([a-zA-Z\d]{3} \d{2} \d{4})__TIME__([:\d]{8})__FILE__(.+)"
+    "__DATE__([a-zA-Z\d]{3} +\d{1,2} \d{4})__TIME__([:\d]{8})__FILE__(.+)"
 )
 
 def execute_command(cmd):
