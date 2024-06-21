@@ -6,7 +6,7 @@ if DEBUG:
     TCP_PORT = 9997
     UDP_PORT = 9996 
 else :
-    HTTP_PORT = 8080
+    HTTP_PORT = 8088
     TCP_PORT = 9999
     UDP_PORT = 9998
 
