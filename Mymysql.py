@@ -18,6 +18,19 @@ list_sql_link = list()
 list_sql_link_lock = threading.Lock()
 
 
+def wait_mysql__server_start():
+    count=0
+    for i in range(0,100):
+        try:
+            sql_obj = MySqlLink()
+            MyPrintE.log_print(f"成功检测到mysql服务 {type(sql_obj)}" 
+                    + time.strftime("%Y-%m-%d %H:%M:%S  ", time.localtime()))
+            return True
+        except mysql.connector.Error as err:
+            print(f"Error connecting to MySQL: {err}")
+            time.sleep(1)  # 等待 1 秒后重试
+    return False
+
 # select b.id,b.fid,b.jid,f.eid,f.aname,f.afuhao,f.did,f.canzhi,j.eid,j.gname,j.gdata from ld_bangdin b,ld_faqi f,ld_jieshou j where b.uid=1 and f.id=b.fid and  j.id=b.jid;
 #
 #
@@ -31,6 +44,7 @@ class MySqlLink:
 
     def __init__(self):
         global sql_link_couunt, list_sql_link
+        self.sql_link = None
         # assert type(sql_link)==mysql.connector.connection.MySQLConnection,"MySqlLink type(sql_link)==mysql.connector.connection.MySQLConnection"
         self.sql_link = mysql.connector.connect(
             charset=CHARSET,
@@ -90,7 +104,8 @@ class MySqlLink:
 
     def __del__(self):
         global sql_link_couunt
-        self.sql_close()
+        if self.sql_link:
+            self.sql_close()
         sql_link_couunt = sql_link_couunt - 1
         MyPrintE.log_print("删掉了一个sql链接，当前连接数" + str(sql_link_couunt))
 

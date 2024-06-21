@@ -13,7 +13,7 @@ import MyPrintE
 import Blackip
 import MySmtp
 import OTAFileRead
-from Mymysql import Mymysql
+from Mymysql import Mymysql,wait_mysql__server_start
 from MySmtp import send_email_yanzhenma, init_email_passwd
 from MyETcp import MyETcp
 from MyETcp import DictTcp
@@ -1993,6 +1993,8 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
 
 
 if __name__ == "__main__":
+    if wait_mysql__server_start()!=True:
+        print("连接数据库失败")
     # print("主线程pid=",os.getpid())
     # OTAFileRead.flush_ota_dir(mode=True) #用比较严格的模式检查文件
     init_email_passwd()
